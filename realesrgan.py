@@ -9,8 +9,8 @@ from utils_sr import *
 
 
 class RealESRGAN:
-    def __init__(self, device, scale=4):
-        self.device = device
+    def __init__(self, device, scale=4, model_path="weights/4x.pth"):
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.scale = scale
         self.model = RRDBNet(
             num_in_ch=3,
@@ -20,6 +20,7 @@ class RealESRGAN:
             num_grow_ch=32,
             scale=scale,
         )
+        self.load_weights(model_path)
 
     def load_weights(self, model_path):
         loadnet = torch.load(model_path)
@@ -67,3 +68,12 @@ class RealESRGAN:
         sr_img = Image.fromarray(sr_img)
 
         return sr_img
+
+    def generate(self, args, result_image_path: str = "") -> tuple[None, None]:
+        if not result_image_path:
+            result_image_path = args.init_image.replace("inputs/", "results/")
+        image = Image.open(args.init_image).convert("RGB")
+        sr_image = self.predict(np.array(image))
+        sr_image.save(result_image_path)
+        # postgres_jobs excepts a seed and loss
+        return None, None
