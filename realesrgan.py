@@ -1,15 +1,18 @@
 import torch
-from torch.nn import functional as F
 from PIL import Image
 import numpy as np
-import cv2
 
 from rrdbnet_arch import RRDBNet
-from utils_sr import *
+from utils_sr import (
+    pad_reflect,
+    split_image_into_overlapping_patches,
+    stich_together,
+    unpad_image,
+)
 
 
 class RealESRGAN:
-    def __init__(self, device, scale=4, model_path="weights/4x.pth"):
+    def __init__(self, scale: int = 4, model_path: str = "weights/4x.pth") -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.scale = scale
         self.model = RRDBNet(
@@ -22,7 +25,7 @@ class RealESRGAN:
         )
         self.load_weights(model_path)
 
-    def load_weights(self, model_path):
+    def load_weights(self, model_path: str) -> None:
         loadnet = torch.load(model_path)
         if "params" in loadnet:
             self.model.load_state_dict(loadnet["params"], strict=True)
@@ -33,10 +36,15 @@ class RealESRGAN:
         self.model.eval()
         self.model.to(self.device)
 
-    @torch.cuda.amp.autocast()
+    @torch.cuda.amp.autocast()  # type: ignore
     def predict(
-        self, lr_image, batch_size=4, patches_size=192, padding=24, pad_size=15
-    ):
+        self,
+        lr_image: Image,
+        batch_size: int = 4,
+        patches_size: int = 192,
+        padding: int = 24,
+        pad_size: int = 15,
+    ) -> Image:
         scale = self.scale
         device = self.device
         lr_image = np.array(lr_image)
@@ -69,11 +77,9 @@ class RealESRGAN:
 
         return sr_img
 
-    def generate(self, args, result_image_path: str = "") -> tuple[None, None]:
+    def generate(self, input_path: str, result_image_path: str) -> None:
         if not result_image_path:
-            result_image_path = args.init_image.replace("inputs/", "results/")
-        image = Image.open(args.init_image).convert("RGB")
+            result_image_path = input_path.replace("inputs/", "results/")
+        image = Image.open(input_path).convert("RGB")
         sr_image = self.predict(np.array(image))
         sr_image.save(result_image_path)
-        # postgres_jobs excepts a seed and loss
-        return None, None
