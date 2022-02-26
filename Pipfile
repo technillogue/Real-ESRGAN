@@ -12,6 +12,7 @@ Pillow = "*"
 torch = ">=1.7"
 torchvision = "*"
 tqdm = "*"
+requests = "*"
 
 [dev-packages]
 
@@ -20,3 +21,7 @@ python_version = "3.9"
 
 [pipenv]
 allow_prereleases = true
+
+[packages.psycopg]
+extras = [ "pool", "binary",]
+

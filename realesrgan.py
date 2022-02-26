@@ -12,7 +12,7 @@ from utils_sr import (
 
 
 class RealESRGAN:
-    def __init__(self, scale: int = 4, model_path: str = "weights/4x.pth") -> None:
+    def __init__(self, scale: int = 4, model_path: str = "weights/x4.pth") -> None:
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.scale = scale
         self.model = RRDBNet(

@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Optional
 
 import psycopg
-import redis
+# import redis
 import requests
 from psycopg.rows import class_row
 
@@ -37,10 +37,11 @@ os.dup2(tee.stdin.fileno(), sys.stderr.fileno())  # type: ignore
 
 admin_signal_url = "https://imogen-renaissance.fly.dev"
 
-password, rest = get_secret("REDIS_URL").removeprefix("redis://:").split("@")
-host, port = rest.split(":")
-r = redis.Redis(host=host, port=int(port), password=password)
+# password, rest = get_secret("REDIS_URL").removeprefix("redis://:").split("@")
+# host, port = rest.split(":")
+# r = redis.Redis(host=host, port=int(port), password=password)
 
+view_url = "https://mcltajcadcrkywecsigc.supabase.in/storage/v1/object/public/imoges/{slug}.png"
 
 def admin(msg: str) -> None:
     logging.info(msg)
@@ -184,9 +185,7 @@ Gen = Optional[RealESRGAN]
 
 
 def handle_item(generator: Gen, prompt: Prompt) -> tuple[Gen, Result]:
-    resp = requests.get(
-        f"https://mcltajcadcrkywecsigc.supabase.in/storage/v1/object/public/imoges/{prompt.prompt}.png"
-    )
+    resp = requests.get(view_url.format(slug=prompt.prompt))
     open(f"inputs/{prompt.prompt}.png", "wb").write(resp.content)
     # if init_image := prompt.param_dict.get("init_image"):
     #     # download the image from redis
@@ -204,26 +203,28 @@ def handle_item(generator: Gen, prompt: Prompt) -> tuple[Gen, Result]:
 
 def post(result: Result, prompt: Prompt) -> None:
     minutes, seconds = divmod(result.elapsed, 60)
-    f = open(result.filepath, mode="rb")
-    message = f"{prompt.prompt}\nTook {minutes}m{seconds}s to generate,"
-    for i in range(3):
-        try:
-            resp = requests.post(
-                f"{prompt.url or admin_signal_url}/attachment",
-                params={"message": message, "id": str(prompt.prompt_id)},
-                files={"image": f},
-            )
-            logging.info(resp)
-            break
-        except requests.RequestException:
-            logging.info("pausing before retry")
-            time.sleep(i)
     bearer = "Bearer " + get_secret("SUPABASE_API_KEY")
     requests.post(
         f"https://mcltajcadcrkywecsigc.supabase.in/storage/v1/object/imoges/{prompt.slug}.png",
         headers={"Authorization": bearer},
         data=open(result.filepath, mode="rb").read(),
     )
+    url = view_url.format(slug=prompt.slug)
+    message = f"{url}\nTook {minutes}m{seconds}s to generate,"
+    # f = open(result.filepath, mode="rb")
+    for i in range(3):
+        try:
+            resp = requests.post(
+                f"{prompt.url or admin_signal_url}/attachment",
+                params={"message": message, "id": str(prompt.prompt_id)},
+                # files={"image": f},
+            )
+            logging.info(resp)
+            break
+        except requests.RequestException:
+            logging.info("pausing before retry")
+            time.sleep(i)
+
     os.remove(result.filepath)
     # can be retrieved with
     # slug = prompt_queue.filepath.split("/")[1] # bc slug= the directory in filepath
