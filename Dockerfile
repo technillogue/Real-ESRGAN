@@ -20,5 +20,5 @@ RUN apt update && DEBIAN_FRONTEND="noninteractive" apt install -y python3.9
 COPY --from=builder /app/venv/lib/python3.9/site-packages /app/
 RUN mkdir inputs results weights
 COPY --from=model /x4.pth /app/weights/
-COPY ./arch_util.py ./postgres_jobs.py ./realesrgan.py ./rrdbnet_arch.py ./secrets.py ./utils_sr.py /app/ 
+COPY ./arch_util.py ./postgres_jobs.py ./realesrgan.py ./rrdbnet_arch.py ./config.py ./utils_sr.py /app/ 
 ENTRYPOINT ["/usr/bin/python3.9", "/app/postgres_jobs.py"]

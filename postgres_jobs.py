@@ -20,7 +20,7 @@ import requests
 from psycopg.rows import class_row
 
 from realesrgan import RealESRGAN
-from secrets import get_secret
+from config import get_secret
 
 hostname = socket.gethostname()
 
@@ -141,7 +141,7 @@ def main() -> None:
                 generator, result = handle_item(generator, prompt)
                 # success
                 start_post = time.time()
-                fmt = """UPDATE prompt_queue SET status='uploading', elapsed_gpu=%s, filepath=%s, WHERE id=%s;"""
+                fmt = """UPDATE prompt_queue SET status='uploading', elapsed_gpu=%s, filepath=%s WHERE id=%s;"""
                 params = [
                     result.elapsed,
                     result.filepath,
@@ -211,6 +211,7 @@ def post(result: Result, prompt: Prompt) -> None:
     )
     url = view_url.format(slug=prompt.slug)
     message = f"{url}\nTook {minutes}m{seconds}s to generate,"
+    admin(message)
     # f = open(result.filepath, mode="rb")
     for i in range(3):
         try:
