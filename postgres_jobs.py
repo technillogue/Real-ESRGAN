@@ -1,7 +1,6 @@
 #!/usr/bin/python3.9
 # Copyright (c) 2022 Sylvie Liberman
 # pylint: disable=subprocess-run-check
-import cProfile
 import dataclasses
 import json
 import logging
@@ -75,8 +74,6 @@ class Prompt:
     prompt_id: int
     prompt: str
     url: str
-    author: str
-    group_id: Optional[str]
     slug: str = ""
     params: str = ""
     param_dict: dict = dataclasses.field(default_factory=dict)
@@ -114,7 +111,7 @@ def get_prompt(conn: psycopg.Connection) -> Optional[Prompt]:
     logging.info("getting")
     maybe_prompt = cursor.execute(
         "UPDATE prompt_queue SET status='assigned', assigned_at=now(), hostname=%s WHERE id = %s "
-        "RETURNING id AS prompt_id, prompt, params, url, author, group_id;",
+        "RETURNING id AS prompt_id, prompt, params, url;",
         [hostname, prompt_id],
     ).fetchone()
     logging.info("set assigned")
@@ -214,10 +211,13 @@ def post(result: Result, prompt: Prompt) -> None:
         data=open(result.filepath, mode="rb").read(),
     )
     url = view_url.format(slug=prompt.slug)
-    message = f"{url}\nTook {minutes}m{seconds}s to generate,"
+    message = f"{url}\nTook {minutes}m{seconds}s to generate"
     admin(message)
-    dest = prompt.group_id or prompt.author
-    resp = requests.post(f"{prompt.url or admin_signal_url}/user/{dest}", data=message)
+    resp = requests.post(
+        f"{prompt.url or admin_signal_url}/prompt_message",
+        data=message,
+        params={"id": str(prompt.prompt_id)},
+    )
     logging.info(resp)
     # f = open(result.filepath, mode="rb")
     # for i in range(3):
