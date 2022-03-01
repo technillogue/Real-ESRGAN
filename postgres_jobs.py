@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Optional
 
 import psycopg
+
 # import redis
 import requests
 from psycopg.rows import class_row
@@ -42,6 +43,7 @@ admin_signal_url = "https://imogen-renaissance.fly.dev"
 # r = redis.Redis(host=host, port=int(port), password=password)
 
 view_url = "https://mcltajcadcrkywecsigc.supabase.in/storage/v1/object/public/imoges/{slug}.png"
+
 
 def admin(msg: str) -> None:
     logging.info(msg)
@@ -73,6 +75,8 @@ class Prompt:
     prompt_id: int
     prompt: str
     url: str
+    author: str
+    group_id: Optional[str]
     slug: str = ""
     params: str = ""
     param_dict: dict = dataclasses.field(default_factory=dict)
@@ -110,7 +114,7 @@ def get_prompt(conn: psycopg.Connection) -> Optional[Prompt]:
     logging.info("getting")
     maybe_prompt = cursor.execute(
         "UPDATE prompt_queue SET status='assigned', assigned_at=now(), hostname=%s WHERE id = %s "
-        "RETURNING id AS prompt_id, prompt, params, url;",
+        "RETURNING id AS prompt_id, prompt, params, url, author, group_id;",
         [hostname, prompt_id],
     ).fetchone()
     logging.info("set assigned")
@@ -212,19 +216,22 @@ def post(result: Result, prompt: Prompt) -> None:
     url = view_url.format(slug=prompt.slug)
     message = f"{url}\nTook {minutes}m{seconds}s to generate,"
     admin(message)
+    dest = prompt.group_id or prompt.author
+    resp = requests.post(f"{prompt.url or admin_signal_url}/user/{dest}", data=message)
+    logging.info(resp)
     # f = open(result.filepath, mode="rb")
-    for i in range(3):
-        try:
-            resp = requests.post(
-                f"{prompt.url or admin_signal_url}/attachment",
-                params={"message": message, "id": str(prompt.prompt_id)},
-                # files={"image": f},
-            )
-            logging.info(resp)
-            break
-        except requests.RequestException:
-            logging.info("pausing before retry")
-            time.sleep(i)
+    # for i in range(3):
+    #     try:
+    #         resp = requests.post(
+    #             f"{prompt.url or admin_signal_url}/attachment",
+    #             params={"message": message, "id": str(prompt.prompt_id)},
+    #             # files={"image": f},
+    #         )
+    #         logging.info(resp)
+    #         break
+    #     except requests.RequestException:
+    #         logging.info("pausing before retry")
+    #         time.sleep(i)
 
     os.remove(result.filepath)
     # can be retrieved with
