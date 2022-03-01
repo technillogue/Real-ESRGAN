@@ -1,5 +1,6 @@
 #/bin/bash
 set -o xtrace
+export v=$1
 git commit -a || exit 1
 echo "0.0.$v" "$(git log -1 --pretty=%B)"
 echo "0.0.$v" "$(git log -1 --pretty=%B)" >> CHANGELOG
