@@ -207,7 +207,7 @@ def post(result: Result, prompt: Prompt) -> None:
     bearer = "Bearer " + get_secret("SUPABASE_API_KEY")
     requests.post(
         f"https://mcltajcadcrkywecsigc.supabase.in/storage/v1/object/imoges/{prompt.slug}.png",
-        headers={"Authorization": bearer},
+        headers={"Authorization": bearer, "Content-Type": "image/png"},
         data=open(result.filepath, mode="rb").read(),
     )
     url = view_url.format(slug=prompt.slug)
