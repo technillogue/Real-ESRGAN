@@ -43,7 +43,6 @@ admin_signal_url = "https://imogen-renaissance.fly.dev"
 
 view_url = "https://mcltajcadcrkywecsigc.supabase.in/storage/v1/object/public/imoges/{slug}.png"
 
-
 def admin(msg: str) -> None:
     logging.info(msg)
     requests.post(
@@ -186,7 +185,10 @@ Gen = Optional[RealESRGAN]
 
 
 def handle_item(generator: Gen, prompt: Prompt) -> tuple[Gen, Result]:
-    resp = requests.get(view_url.format(slug=prompt.prompt))
+    if prompt.prompt.startswith("http"):
+        resp = requests.get(prompt.prompt)
+    else:
+        resp = requests.get(view_url.format(slug=prompt.prompt))
     open(f"inputs/{prompt.prompt}.png", "wb").write(resp.content)
     # if init_image := prompt.param_dict.get("init_image"):
     #     # download the image from redis
