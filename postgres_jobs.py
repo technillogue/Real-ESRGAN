@@ -83,7 +83,8 @@ class Prompt:
             assert isinstance(self.param_dict, dict)
         except (json.JSONDecodeError, AssertionError):
             self.param_dict = {}
-        self.slug = f"{self.prompt}_upsampled"
+        self.safe_prompt = str(int(time.time())) if self.prompt.startswith("http") else self.prompt
+        self.slug = f"{self.safe_prompt}_upsampled"
 
 
 @dataclasses.dataclass
@@ -189,14 +190,14 @@ def handle_item(generator: Gen, prompt: Prompt) -> tuple[Gen, Result]:
         resp = requests.get(prompt.prompt)
     else:
         resp = requests.get(view_url.format(slug=prompt.prompt))
-    open(f"inputs/{prompt.prompt}.png", "wb").write(resp.content)
+    open(f"inputs/{prompt.safe_prompt}.png", "wb").write(resp.content)
     # if init_image := prompt.param_dict.get("init_image"):
     #     # download the image from redis
     #     open(init_image, "wb").write(r[init_image])
     start_time = time.time()
     if not generator:
         generator = RealESRGAN()
-    generator.generate(f"inputs/{prompt.prompt}.png", f"results/{prompt.slug}.png")
+    generator.generate(f"inputs/{prompt.safe_prompt}.png", f"results/{prompt.slug}.png")
     logging.info("generated")
     return generator, Result(
         elapsed=round(time.time() - start_time),

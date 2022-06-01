@@ -26,7 +26,10 @@ class RealESRGAN:
         self.load_weights(model_path)
 
     def load_weights(self, model_path: str) -> None:
-        loadnet = torch.load(model_path)
+        try:
+            loadnet = torch.load(model_path)
+        except FileNotFoundError:
+            loadnet = torch.load("Real-ESRGAN/weights/x4.pth")
         if "params" in loadnet:
             self.model.load_state_dict(loadnet["params"], strict=True)
         elif "params_ema" in loadnet:
@@ -56,6 +59,7 @@ class RealESRGAN:
         img = torch.FloatTensor(patches / 255).permute((0, 3, 1, 2)).to(device).detach()
 
         with torch.no_grad():
+            # this part could be async maybe
             res = self.model(img[0:batch_size])
             for i in range(batch_size, img.shape[0], batch_size):
                 res = torch.cat((res, self.model(img[i : i + batch_size])), 0)

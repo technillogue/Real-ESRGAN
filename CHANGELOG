@@ -1,8 +1,10 @@
-0.0.4 4x  x4
-0.0.5 admin
-0.0.6 config
-0.0.7 try to send in a group
-0.0.8 new endpoint
-0.0.9 mimetype
+0.0.12 missed revision?
+0.0.11 safe prompt should be safe now
+0.0.10 prompt can be an url instead of slug
 0.0.9 fix deploy maybe
-0.0.10 prompt can be an url instead of slug 
+0.0.9 mimetype
+0.0.8 new endpoint
+0.0.7 try to send in a group
+0.0.6 config
+0.0.5 admin
+0.0.4 4x  x4
